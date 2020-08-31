@@ -177,17 +177,11 @@ anbox::cmds::Launch::Launch()
       bus_type = anbox::dbus::Bus::Type::System;
     auto bus = std::make_shared<anbox::dbus::Bus>(bus_type);
 
-    std::shared_ptr<ui::SplashScreen> ss;
     if (!bus->has_service_with_name(dbus::interface::Service::name())) {
       DEBUG("Session manager is not yet running, trying to start it");
 
       if (!launch_session_manager())
         return EXIT_FAILURE;
-
-      // Give us a splash screen as long as we're trying to connect
-      // with the session manager so the user knows something is
-      // happening after he started Anbox.
-      ss = std::make_shared<ui::SplashScreen>();
     }
 
     unsigned int n = 0;
@@ -214,10 +208,6 @@ anbox::cmds::Launch::Launch()
       ERROR("Session manager failed to become ready");
       return EXIT_FAILURE;
     }
-
-    // If we have a splash screen now is the time to drop it as we're
-    // going to launch the real application now.
-    ss.reset();
 
     const auto success = try_launch_activity(app_mgr);
     return success ? EXIT_SUCCESS : EXIT_FAILURE;
