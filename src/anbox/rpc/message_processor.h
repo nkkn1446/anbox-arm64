@@ -61,10 +61,20 @@ class MessageProcessor : public network::MessageProcessor {
   virtual void dispatch(Invocation const&) {}
   virtual void process_event_sequence(const std::string&) {}
 
- private:
+ //private:
+ protected:
   std::shared_ptr<network::MessageSender> sender_;
   std::vector<std::uint8_t> buffer_;
   std::shared_ptr<PendingCallCache> pending_calls_;
+};
+
+class HogeMessageProcessor : public MessageProcessor {
+ public:
+  HogeMessageProcessor(const std::shared_ptr<network::MessageSender>& sender,
+                   const std::shared_ptr<PendingCallCache>& pending_calls);
+  ~HogeMessageProcessor();
+
+  bool process_data(const std::vector<std::uint8_t>& data) override;
 };
 }  // namespace rpc
 }  // namespace anbox

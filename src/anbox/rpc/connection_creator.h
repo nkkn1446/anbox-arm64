@@ -46,7 +46,8 @@ class ConnectionCreator
       std::shared_ptr<boost::asio::basic_stream_socket<
           boost::asio::local::stream_protocol>> const &socket) override;
 
- private:
+ //private:
+ protected:
   int next_id();
 
   std::shared_ptr<Runtime> runtime_;
@@ -54,6 +55,17 @@ class ConnectionCreator
   std::shared_ptr<network::Connections<network::SocketConnection>> const
       connections_;
   MessageProcessorFactory message_processor_factory_;
+};
+
+class HogeConnectionCreator : public ConnectionCreator {
+public:
+  HogeConnectionCreator(const std::shared_ptr<Runtime> &rt,
+                    const MessageProcessorFactory &factory);
+  ~HogeConnectionCreator() noexcept;
+  void create_connection_for(
+      std::shared_ptr<boost::asio::basic_stream_socket<
+          boost::asio::local::stream_protocol>> const &socket) override;
+
 };
 }  // namespace rpc
 }  // namespace anbox

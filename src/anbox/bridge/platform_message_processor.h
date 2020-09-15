@@ -23,7 +23,7 @@
 namespace anbox {
 namespace bridge {
 class PlatformApiSkeleton;
-class PlatformMessageProcessor : public rpc::MessageProcessor {
+class PlatformMessageProcessor : public rpc::HogeMessageProcessor {
  public:
   PlatformMessageProcessor(
       const std::shared_ptr<network::MessageSender> &sender,

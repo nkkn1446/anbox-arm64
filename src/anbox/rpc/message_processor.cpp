@@ -23,6 +23,8 @@
 
 #include "anbox_rpc.pb.h"
 
+#include "anbox/logger.h"
+
 namespace anbox {
 namespace rpc {
 const ::std::string &Invocation::method_name() const {
@@ -84,8 +86,69 @@ bool MessageProcessor::process_data(const std::vector<std::uint8_t> &data) {
   return true;
 }
 
+HogeMessageProcessor::HogeMessageProcessor(
+    const std::shared_ptr<network::MessageSender> &sender,
+    const std::shared_ptr<PendingCallCache> &pending_calls)
+    : MessageProcessor(sender, pending_calls) {}
+
+HogeMessageProcessor::~HogeMessageProcessor() {}
+
+bool HogeMessageProcessor::process_data(const std::vector<std::uint8_t> &data) {
+  for (const auto &byte : data) buffer_.push_back(byte);
+
+  while (buffer_.size() > 0) {
+    const StrBuffer buffer = dec(buffer_.data());
+    const auto high = buffer.high;
+    const auto medium = buffer.medium;
+    const auto low = buffer.low;
+    size_t const message_size = (high << 16) + (medium << 8) + low;
+    const auto message_type = buffer.message_type;
+    unsigned char header_bytes[header_size];
+    enc(header_bytes, buffer);
+    (buffer.high == header_bytes[0] &&
+    buffer.medium == header_bytes[1] &&
+    buffer.low == header_bytes[2] &&
+    buffer.message_type == header_bytes[3])
+     ? DEBUG("CLEAR")
+     : DEBUG("FAILED");
+
+    // If we don't have yet all bytes for a new message return and wait
+    // until we have all.
+    if (buffer_.size() - header_size < message_size) break;
+
+    if (message_type == MessageType::invocation) {
+      anbox::protobuf::rpc::Invocation raw_invocation;
+      raw_invocation.ParseFromArray(buffer_.data() + header_size, message_size);
+
+      dispatch(Invocation(raw_invocation));
+    } else if (message_type == MessageType::response) {
+      auto result = make_protobuf_object<protobuf::rpc::Result>();
+      result->ParseFromArray(buffer_.data() + header_size, message_size);
+
+      if (result->has_id()) {
+        pending_calls_->populate_message_for_result(*result,
+                                                    [&](google::protobuf::MessageLite *result_message) {
+                                                      result_message->ParseFromString(result->response());
+                                                    });
+        pending_calls_->complete_response(*result);
+      }
+
+      for (int n = 0; n < result->events_size(); n++) {
+	      DEBUG("Hoge");
+        process_event_sequence(result->events(n));
+      }
+    }
+
+    buffer_.erase(buffer_.begin(),
+                  buffer_.begin() + header_size + message_size);
+  }
+
+  return true;
+}
+
 void MessageProcessor::send_response(::google::protobuf::uint32 id,
                                      google::protobuf::MessageLite *response) {
+	    DEBUG("Fuga");
   VariableLengthArray<serialization_buffer_size> send_response_buffer(
       static_cast<size_t>(response->ByteSize()));
 
@@ -106,6 +169,23 @@ void MessageProcessor::send_response(::google::protobuf::uint32 id,
       static_cast<unsigned char>((size >> 8) & 0xff),
       static_cast<unsigned char>((size >> 0) & 0xff), MessageType::response,
   };
+  const auto buffer = dec(header_bytes);
+  if(
+                  buffer.high == header_bytes[0] &&
+                  buffer.medium == header_bytes[1] &&
+                  buffer.low == header_bytes[2] &&
+                  buffer.message_type == header_bytes[3]
+    )
+          DEBUG("CLEAR");
+  unsigned char hoge[header_size];
+  enc(hoge, buffer);
+  if(
+   buffer.high == hoge[0] &&
+   buffer.medium == hoge[1] &&
+   buffer.low == hoge[2] &&
+   buffer.message_type == hoge[3]
+  )
+   DEBUG("CLEAR");
 
   std::vector<std::uint8_t> send_buffer(sizeof(header_bytes) + size);
   std::copy(header_bytes, header_bytes + sizeof(header_bytes),

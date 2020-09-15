@@ -28,7 +28,7 @@ PlatformMessageProcessor::PlatformMessageProcessor(
     const std::shared_ptr<network::MessageSender> &sender,
     const std::shared_ptr<PlatformApiSkeleton> &server,
     const std::shared_ptr<rpc::PendingCallCache> &pending_calls)
-    : rpc::MessageProcessor(sender, pending_calls), server_(server) {}
+    : rpc::HogeMessageProcessor(sender, pending_calls), server_(server) {}
 
 PlatformMessageProcessor::~PlatformMessageProcessor() {}
 
@@ -46,6 +46,7 @@ void PlatformMessageProcessor::process_event_sequence(
     WARNING("Failed to parse events from raw string");
     return;
   }
+  DEBUG("Hoge");
 
   if (seq.has_boot_finished())
     server_->handle_boot_finished_event(seq.boot_finished());

@@ -211,8 +211,9 @@ anbox::cmds::SessionManager::SessionManager()
 
     auto bridge_connector = std::make_shared<network::PublishedSocketConnector>(
         utils::string_format("%s/anbox_bridge", socket_path), rt,
-        std::make_shared<rpc::ConnectionCreator>(
+        std::make_shared<rpc::HogeConnectionCreator>(
             rt, [&](const std::shared_ptr<network::MessageSender> &sender) {
+	    DEBUG("Hoge");
               auto pending_calls = std::make_shared<rpc::PendingCallCache>();
               auto rpc_channel =
                   std::make_shared<rpc::Channel>(pending_calls, sender);

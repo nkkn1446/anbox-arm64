@@ -46,9 +46,12 @@ class SocketConnection {
 
   void send(char const* data, size_t length);
   void read_next_message();
+  void hoge_read_next_message();
 
  private:
   void on_read_size(const boost::system::error_code& ec,
+                    std::size_t bytes_read);
+  void hoge_on_read_size(const boost::system::error_code& ec,
                     std::size_t bytes_read);
 
   std::shared_ptr<MessageReceiver> const message_receiver_;

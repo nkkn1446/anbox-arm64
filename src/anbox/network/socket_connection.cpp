@@ -22,6 +22,8 @@
 #include "anbox/network/message_sender.h"
 #include "anbox/network/socket_connection.h"
 
+#include "anbox/rpc/constants.h"
+
 #include <boost/signals2.hpp>
 #include <boost/throw_exception.hpp>
 
@@ -68,6 +70,37 @@ void SocketConnection::on_read_size(const boost::system::error_code& error, std:
 
   if (processor_->process_data(data))
     read_next_message();
+  else
+      connections_->remove(id());
+}
+
+void SocketConnection::hoge_read_next_message() {
+  auto callback = std::bind(&SocketConnection::hoge_on_read_size, this, std::placeholders::_1, std::placeholders::_2);
+  message_receiver_->async_receive_msg(callback, ba::buffer(buffer_));
+}
+
+void SocketConnection::hoge_on_read_size(const boost::system::error_code& error, std::size_t bytes_read) {
+  if (error) {
+    connections_->remove(id());
+    return;
+  }
+
+  DEBUG("%d", bytes_read);
+  const auto buffer = rpc::dec(buffer_.data());
+  unsigned char header_data[rpc::header_size];
+  rpc::enc(header_data, buffer);
+  (buffer.high == header_data[0] &&
+   buffer.medium == header_data[1] &&
+   buffer.low == header_data[2] &&
+   buffer.message_type == header_data[3])
+   ? DEBUG("CLEAR")
+   : DEBUG("FAIL");
+
+  std::vector<std::uint8_t> data(bytes_read);
+  std::copy(buffer_.data(), buffer_.data() + bytes_read, data.data());
+
+  if (processor_->process_data(data))
+    hoge_read_next_message();
   else
       connections_->remove(id());
 }
